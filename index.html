@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<title>IntersectionObserver Bug Report Repro Demo</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<style>
+    #step {
+      margin: 100vh auto;
+      height: 200px;
+      width: 200px;
+      background: rgba(0,0,100,0.2);
+    }
+    #intersector1,#intersector2 {
+      background: rgba(100,0,0,0.2);
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      text-align: center;
+      box-sizing: content-box;
+      font-family: sans-serif;
+      font-size: 1.2em;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    #intersector1 {
+      right: 51%;
+    }
+    #intersector2 {
+      left: 51%;
+    }
+	</style>
+</head>
+
+<body>
+  <div id="intersector1">
+      <span>Uncompensated</span>
+  </div>
+  <div id="intersector2">
+    <span>Compensated for devicePixelRatio</span>
+  </div>
+  <div id="scroller">
+    <section id="step"></section>
+  </div>
+
+	<script>
+    function invertMargin(margin) {
+      return margin
+        .split(" ")
+        .map(d => `${parseInt(d.replace("px", "")) * -1}px`)
+        .join(" ");
+    }
+
+    const init = () => {
+      const top = -200;
+      const bottom = -200;
+      const margin = `${top}px 0px ${bottom}px 0px`;
+      const compensatedMargin = `${top * devicePixelRatio}px 0px ${bottom * devicePixelRatio}px 0px`
+
+      // rootMargin takes inverted values from a "regular" margin, so to display the
+      // intersection area, we multiply the margin values by -1 and apply to a fixed
+      // position element
+      const invertedMargin = invertMargin(margin);
+
+      [1, 2].forEach(i => {
+        const $i = document.querySelector(`#intersector${i}`) 
+        const cb = (entries, observer) => {
+          const {isIntersecting} = entries[0];
+          $i.style.background = isIntersecting
+            ? 'rgba(0,100,0,0.2)'
+            : 'rgba(100,0,0,0.2)';
+        }
+        console.log(invertedMargin)
+        $i.style.margin = invertedMargin;
+        new IntersectionObserver(cb, {
+          root: null,
+          rootMargin: i == 1 ? margin : compensatedMargin,
+          threshold: 0
+        }).observe(document.querySelector("#step"))
+      })
+    }
+
+    init()
+	</script>
+</body>
+</html>
